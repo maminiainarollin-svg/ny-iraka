@@ -132,6 +132,29 @@
     .k-lyrics{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:28px 28px 150px;}
     .k-lyrics p{font-size:clamp(20px,3.5vw,34px);line-height:2;color:rgba(255,255,255,.9);text-align:center;font-weight:500;white-space:pre-wrap;}
     .k-lyrics p.empty{color:rgba(255,255,255,.2);font-size:16px;font-style:italic;}
+    .k-line{font-size:clamp(18px,3vw,32px);line-height:1.7;color:rgba(255,255,255,.2);text-align:center;font-weight:500;padding:10px 20px;transition:color .4s,font-size .3s;}
+    .k-line.active{color:#fff;font-size:clamp(24px,4.5vw,42px);}
+    .k-line.past{color:rgba(255,255,255,.35);}
+    #sync-view{display:none;position:fixed;inset:0;background:#0d0d1a;z-index:1100;flex-direction:column;}
+    #sync-view.open{display:flex;}
+    .sync-top{display:flex;align-items:center;justify-content:space-between;padding:max(16px,env(safe-area-inset-top)) 20px 14px;border-bottom:.5px solid rgba(255,255,255,.07);flex-shrink:0;}
+    .sync-title{font-size:16px;font-weight:700;color:#fff;}
+    .sync-sub{font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;}
+    .sync-lines{flex:1;overflow-y:auto;padding:12px 16px;}
+    .sync-line-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;margin-bottom:6px;background:rgba(255,255,255,.04);border:.5px solid rgba(255,255,255,.06);}
+    .sync-line-item.current{background:rgba(90,127,199,.2);border-color:rgba(90,127,199,.5);}
+    .sync-line-item.timed{border-color:rgba(76,175,80,.3);}
+    .sync-line-text{flex:1;font-size:14px;color:rgba(255,255,255,.8);line-height:1.5;}
+    .sync-line-time{font-size:11px;color:rgba(255,255,255,.25);min-width:40px;text-align:right;font-family:monospace;}
+    .sync-line-time.set{color:#4caf50;}
+    .sync-line-clear{background:none;border:none;color:rgba(255,255,255,.2);cursor:pointer;font-size:13px;padding:0 2px;}
+    .sync-bottom{padding:12px 20px max(16px,env(safe-area-inset-bottom));border-top:.5px solid rgba(255,255,255,.07);background:rgba(13,13,26,.98);flex-shrink:0;}
+    .sync-player-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+    .sync-hint{text-align:center;font-size:12px;color:rgba(255,255,255,.3);margin-bottom:10px;}
+    .sync-tap-btn{width:100%;padding:18px;background:var(--accent);border:none;border-radius:14px;color:#fff;font-size:18px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+    .sync-tap-btn:active{opacity:.85;}
+    .sync-tap-btn.done{background:#4caf50;}
+    .sync-actions-row{display:flex;gap:8px;margin-top:10px;}
     .k-player{position:absolute;bottom:0;left:0;right:0;background:rgba(8,8,16,.97);border-top:.5px solid rgba(255,255,255,.07);padding:12px 20px max(16px,env(safe-area-inset-bottom));}
     .k-trow{display:flex;gap:7px;margin-bottom:10px;overflow-x:auto;padding-bottom:2px;}
     .k-tbtn{padding:4px 12px;border-radius:999px;border:.5px solid rgba(255,255,255,.18);background:transparent;color:rgba(255,255,255,.55);font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
@@ -220,6 +243,10 @@
     <textarea class="lyrics-area" id="lyrics-area" placeholder="Collez ou saisissez les paroles ici..." oninput="scheduleAutoSave()"></textarea>
     <div class="action-row">
       <button class="btn primary" onclick="saveLyrics()">Enregistrer</button>
+      <button class="btn kbtn" onclick="openSyncEditor()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Sync karaoké
+      </button>
       <button class="btn kbtn" onclick="openKaraoke()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/></svg>
         Mode karaoké
@@ -314,6 +341,43 @@
         <div class="k-pfill" id="k-pfill" style="width:0%"></div>
       </div>
       <div class="k-time" id="k-time">0:00</div>
+    </div>
+  </div>
+</div>
+
+<!-- SYNC EDITOR -->
+<div id="sync-view">
+  <div class="sync-top">
+    <div>
+      <div class="sync-title">Synchronisation karaoké</div>
+      <div class="sync-sub" id="sync-progress-lbl">Ligne 0 / 0</div>
+    </div>
+    <button class="k-ibtn" onclick="closeSyncEditor()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="sync-lines" id="sync-lines-list"></div>
+  <div class="sync-bottom">
+    <div class="sync-player-row">
+      <button class="k-cbtn sec" onclick="syncSeekRel(-5)" style="width:34px;height:34px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>
+      </button>
+      <button class="k-cbtn play" id="sync-play-btn" onclick="syncTogglePlay()" style="width:38px;height:38px;">
+        <svg id="sync-picon" width="14" height="14" viewBox="0 0 24 24" fill="#0d0d1a"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      </button>
+      <button class="k-cbtn sec" onclick="syncSeekRel(5)" style="width:34px;height:34px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.49-4.5"/></svg>
+      </button>
+      <div class="k-prog" onclick="syncSeekTo(event)" style="flex:1;">
+        <div class="k-pfill" id="sync-pfill" style="width:0%"></div>
+      </div>
+      <div class="k-time" id="sync-time">0:00</div>
+    </div>
+    <div class="sync-hint" id="sync-hint-txt">Lancez l'audio puis appuyez au début de chaque ligne</div>
+    <button class="sync-tap-btn" id="sync-tap-btn" onclick="syncTap()">⏱ Marquer cette ligne</button>
+    <div class="sync-actions-row">
+      <button class="btn" style="flex:1;background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.1);" onclick="syncReset()">Recommencer</button>
+      <button class="btn primary" style="flex:1;" onclick="saveSyncAndClose()">✓ Enregistrer</button>
     </div>
   </div>
 </div>
@@ -597,21 +661,198 @@ document.getElementById('modal').addEventListener('click',e=>{if(e.target===docu
 document.getElementById('track-modal').addEventListener('click',e=>{if(e.target===document.getElementById('track-modal'))closeTrackModal();});
 
 // ══════════════════════════════════════════════════════
-// KARAOKE
+// KARAOKE SYNCHRONISÉ
 // ══════════════════════════════════════════════════════
+let syncTimestamps = []; // [{time, text}]
+let syncLines = [];
+let syncCurrentIdx = -1;
+let syncAudio = null, syncPlaying = false;
+let syncNextLine = 0;
+
+// Parse lyrics into array of lines
+function parseLyrics(lyrics){
+  return (lyrics||'').split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+}
+
+// ── SYNC EDITOR ────────────────────────────────────────
+function openSyncEditor(){
+  if(!currentSong){return;}
+  const lyrics = currentSong.lyrics||'';
+  if(!lyrics.trim()){toast('⚠️ Saisissez les paroles d\'abord');return;}
+  const tracks = currentSong.tracks||[];
+  if(!tracks.length){toast('⚠️ Ajoutez une piste audio d\'abord');return;}
+
+  syncLines = parseLyrics(lyrics);
+  // Load existing timestamps if any
+  try{ syncTimestamps = JSON.parse(currentSong.sync_data||'[]'); }catch(e){ syncTimestamps=[]; }
+  // Pad to match lines
+  while(syncTimestamps.length < syncLines.length) syncTimestamps.push(null);
+  syncNextLine = syncTimestamps.findIndex(t=>t===null);
+  if(syncNextLine===-1) syncNextLine=syncLines.length;
+
+  // Setup audio from first track
+  if(syncAudio){ syncAudio.pause(); syncAudio=null; }
+  syncAudio = new Audio(tracks[0].audio_url||'');
+  syncAudio.ontimeupdate = onSyncTick;
+  syncAudio.onended = ()=>{syncPlaying=false;updateSyncIcon();};
+  syncPlaying=false; updateSyncIcon();
+
+  renderSyncLines();
+  updateSyncProgressLabel();
+  document.getElementById('sync-pfill').style.width='0%';
+  document.getElementById('sync-time').textContent='0:00';
+  document.getElementById('sync-view').classList.add('open');
+}
+
+function closeSyncEditor(){
+  if(syncAudio){syncAudio.pause();syncPlaying=false;}
+  document.getElementById('sync-view').classList.remove('open');
+}
+
+function renderSyncLines(){
+  const list = document.getElementById('sync-lines-list');
+  list.innerHTML = syncLines.map((line,i)=>{
+    const t = syncTimestamps[i];
+    const isCurrent = i===syncNextLine;
+    const timed = t!==null;
+    const timeStr = t!==null ? formatTime(t) : '--:--';
+    return `<div class="sync-line-item ${isCurrent?'current':''} ${timed?'timed':''}" id="sli-${i}">
+      <div class="sync-line-text">${line||'♪'}</div>
+      <div class="sync-line-time ${timed?'set':''}" id="slt-${i}">${timeStr}</div>
+      ${timed?`<button class="sync-line-clear" onclick="clearSyncLine(${i})">✕</button>`:''}
+    </div>`;
+  }).join('');
+  // Scroll to current
+  const cur = document.getElementById('sli-'+syncNextLine);
+  if(cur) cur.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function onSyncTick(){
+  if(!syncAudio||!syncAudio.duration)return;
+  const pct=syncAudio.currentTime/syncAudio.duration;
+  document.getElementById('sync-pfill').style.width=(pct*100)+'%';
+  const t=Math.floor(syncAudio.currentTime);
+  document.getElementById('sync-time').textContent=formatTime(syncAudio.currentTime);
+}
+
+function syncTogglePlay(){
+  if(!syncAudio)return;
+  if(syncPlaying){syncAudio.pause();syncPlaying=false;}
+  else{syncAudio.play();syncPlaying=true;}
+  updateSyncIcon();
+}
+
+function updateSyncIcon(){
+  const i=document.getElementById('sync-picon');
+  i.innerHTML=syncPlaying?'<rect x="6" y="4" width="4" height="16" fill="#0d0d1a"/><rect x="14" y="4" width="4" height="16" fill="#0d0d1a"/>':'<polygon points="5 3 19 12 5 21 5 3" fill="#0d0d1a"/>';
+}
+
+function syncSeekRel(s){if(!syncAudio)return;syncAudio.currentTime=Math.max(0,Math.min(syncAudio.duration||0,syncAudio.currentTime+s));}
+function syncSeekTo(e){if(!syncAudio||!syncAudio.duration)return;const r=e.currentTarget.getBoundingClientRect();syncAudio.currentTime=((e.clientX-r.left)/r.width)*syncAudio.duration;}
+
+function syncTap(){
+  if(!syncAudio)return;
+  if(syncNextLine>=syncLines.length){
+    toast('✓ Toutes les lignes sont synchronisées !');
+    document.getElementById('sync-tap-btn').classList.add('done');
+    document.getElementById('sync-tap-btn').textContent='✓ Terminé !';
+    return;
+  }
+  const time = syncAudio.currentTime;
+  syncTimestamps[syncNextLine] = time;
+  // Update UI for this line
+  const item=document.getElementById('sli-'+syncNextLine);
+  const timeEl=document.getElementById('slt-'+syncNextLine);
+  if(item){item.classList.add('timed');item.classList.remove('current');}
+  if(timeEl){timeEl.textContent=formatTime(time);timeEl.classList.add('set');}
+  syncNextLine++;
+  // Mark next as current
+  const nextItem=document.getElementById('sli-'+syncNextLine);
+  if(nextItem){nextItem.classList.add('current');nextItem.scrollIntoView({behavior:'smooth',block:'center'});}
+  updateSyncProgressLabel();
+  if(syncNextLine>=syncLines.length){
+    document.getElementById('sync-tap-btn').classList.add('done');
+    document.getElementById('sync-tap-btn').textContent='✓ Terminé — Enregistrer';
+    document.getElementById('sync-hint-txt').textContent='Toutes les lignes sont synchronisées !';
+  }
+}
+
+function clearSyncLine(i){
+  syncTimestamps[i]=null;
+  if(i<syncNextLine) syncNextLine=i;
+  document.getElementById('sync-tap-btn').classList.remove('done');
+  document.getElementById('sync-tap-btn').textContent='⏱ Marquer cette ligne';
+  document.getElementById('sync-hint-txt').textContent='Lancez l\'audio puis appuyez au début de chaque ligne';
+  renderSyncLines();
+  updateSyncProgressLabel();
+}
+
+function syncReset(){
+  syncTimestamps=new Array(syncLines.length).fill(null);
+  syncNextLine=0;
+  if(syncAudio){syncAudio.pause();syncAudio.currentTime=0;syncPlaying=false;updateSyncIcon();}
+  document.getElementById('sync-pfill').style.width='0%';
+  document.getElementById('sync-time').textContent='0:00';
+  document.getElementById('sync-tap-btn').classList.remove('done');
+  document.getElementById('sync-tap-btn').textContent='⏱ Marquer cette ligne';
+  renderSyncLines();
+  updateSyncProgressLabel();
+}
+
+function updateSyncProgressLabel(){
+  const done=syncTimestamps.filter(t=>t!==null).length;
+  document.getElementById('sync-progress-lbl').textContent=`Ligne ${done} / ${syncLines.length}`;
+}
+
+async function saveSyncAndClose(){
+  if(!currentSong)return;
+  const data=JSON.stringify(syncTimestamps);
+  currentSong.sync_data=data;
+  try{
+    await sbUpdate('songs',currentSong.id,{sync_data:data});
+    const idx=songs.findIndex(s=>s.id===currentSong.id);if(idx!==-1)songs[idx]=currentSong;
+    toast('✓ Synchronisation enregistrée');
+  }catch(e){ toast('⚠️ Enregistré localement seulement'); }
+  closeSyncEditor();
+}
+
+function formatTime(s){
+  const m=Math.floor(s/60);
+  const sec=(s%60).toFixed(1);
+  return m+':'+(parseFloat(sec)<10?'0':'')+sec;
+}
+
+// ── KARAOKE DISPLAY ────────────────────────────────────
 async function openKaraoke(){
   if(!currentSong)return;
   document.getElementById('k-title').textContent=currentSong.title;
   document.getElementById('k-artist').textContent=currentSong.artist;
+
+  // Check if we have sync data
+  let hasSyncData = false;
+  try{
+    const ts = JSON.parse(currentSong.sync_data||'[]');
+    if(ts.length>0 && ts.some(t=>t!==null)) hasSyncData=true;
+  }catch(e){}
+
   const lyrics=currentSong.lyrics||'';
   const inner=document.getElementById('k-lyrics-inner');
-  inner.innerHTML=lyrics.trim()?'<p>'+lyrics.replace(/\n\n+/g,'</p><p style="margin-top:2.5rem;">').replace(/\n/g,'<br>')+'</p>':'<p class="empty">Aucune parole saisie.</p>';
+
+  if(hasSyncData){
+    // Sync mode — render lines individually
+    const lines=parseLyrics(lyrics);
+    inner.innerHTML=lines.map((l,i)=>`<div class="k-line" id="kl-${i}">${l||'♪'}</div>`).join('');
+  } else {
+    // Classic mode
+    inner.innerHTML=lyrics.trim()?'<p>'+lyrics.replace(/\n\n+/g,'</p><p style="margin-top:2.5rem;">').replace(/\n/g,'<br>')+'</p>':'<p class="empty">Aucune parole saisie. Utilisez "Sync karaoké" pour synchroniser.</p>';
+  }
+
   document.getElementById('k-lyrics').scrollTop=0;
   const tracks=currentSong.tracks||[];
   const row=document.getElementById('k-trow');
   if(tracks.length){
     row.innerHTML=tracks.map((t,i)=>`<button class="k-tbtn ${i===0?'on':''}" id="ktb-${t.id}" onclick="kSelectTrack('${t.id}','${t.audio_url||''}')">${t.name}</button>`).join('');
-    await kSelectTrack(tracks[0].id,tracks[0].audio_url||'');
+    await kSelectTrack(tracks[0].id,tracks[0].audio_url||'',hasSyncData);
   } else {
     row.innerHTML='<span style="font-size:11px;color:rgba(255,255,255,0.3);">Aucune piste audio</span>';
     kAudio=null;
@@ -628,11 +869,19 @@ async function openKaraoke(){
   document.getElementById('kview').classList.add('open');
 }
 
-async function kSelectTrack(tid,url){
+let kSyncTimestamps=[], kSyncLines=[], kCurrentLine=-1, kHasSync=false;
+
+async function kSelectTrack(tid,url,hasSyncData){
   if(kAudio){kAudio.pause();kAudio=null;kPlaying=false;updateKIcon();}
+  kHasSync=hasSyncData||false;
   document.querySelectorAll('.k-tbtn').forEach(b=>b.classList.remove('on'));
   const btn=document.getElementById('ktb-'+tid);if(btn)btn.classList.add('on');
   if(!url)return;
+  if(kHasSync){
+    try{kSyncTimestamps=JSON.parse(currentSong.sync_data||'[]');}catch(e){kSyncTimestamps=[];}
+    kSyncLines=parseLyrics(currentSong.lyrics||'');
+    kCurrentLine=-1;
+  }
   kAudio=new Audio(url);
   kAudio.ontimeupdate=onKTick;
   kAudio.onended=()=>{kPlaying=false;updateKIcon();stopAutoScroll();};
@@ -644,7 +893,28 @@ function onKTick(){
   document.getElementById('k-pfill').style.width=(pct*100)+'%';
   const t=Math.floor(kAudio.currentTime);
   document.getElementById('k-time').textContent=Math.floor(t/60)+':'+(t%60+'').padStart(2,'0');
-  if(autoScrollOn&&!manualScrolling){
+
+  if(kHasSync){
+    // Find which line should be active
+    const ct=kAudio.currentTime;
+    let activeLine=-1;
+    for(let i=0;i<kSyncTimestamps.length;i++){
+      const ts=kSyncTimestamps[i];
+      if(ts!==null && ct>=ts) activeLine=i;
+    }
+    if(activeLine!==kCurrentLine){
+      kCurrentLine=activeLine;
+      // Update line classes
+      document.querySelectorAll('.k-line').forEach((el,i)=>{
+        el.classList.remove('active','past');
+        if(i===activeLine) el.classList.add('active');
+        else if(i<activeLine) el.classList.add('past');
+      });
+      // Auto scroll to active line
+      const activeEl=document.getElementById('kl-'+activeLine);
+      if(activeEl&&!manualScrolling) activeEl.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+  } else if(autoScrollOn&&!manualScrolling){
     const wrap=document.getElementById('k-lyrics');
     const max=wrap.scrollHeight-wrap.clientHeight;
     if(max>0) wrap.scrollTop+=(pct*max-wrap.scrollTop)*0.015;
@@ -654,7 +924,7 @@ function onKTick(){
 function kTogglePlay(){
   if(!kAudio)return;
   if(kPlaying){kAudio.pause();kPlaying=false;if(autoScrollOn&&(!kAudio||kAudio.paused))stopAutoScroll();}
-  else{kAudio.play();kPlaying=true;if(autoScrollOn)startFixedScroll();}
+  else{kAudio.play();kPlaying=true;if(autoScrollOn&&!kHasSync)startFixedScroll();}
   updateKIcon();
 }
 
@@ -683,7 +953,7 @@ function toggleAutoScroll(){
   autoScrollOn=!autoScrollOn;
   const tog=document.getElementById('k-stoggle');
   const lbl=document.getElementById('k-sync-lbl');
-  if(autoScrollOn){tog.classList.add('on');if(kAudio&&!kAudio.paused){lbl.style.display='inline';}else{lbl.style.display='none';startFixedScroll();}}
+  if(autoScrollOn){tog.classList.add('on');if(kAudio&&!kAudio.paused){lbl.style.display='inline';}else{lbl.style.display='none';if(!kHasSync)startFixedScroll();}}
   else{tog.classList.remove('on');lbl.style.display='none';stopAutoScroll();}
 }
 
