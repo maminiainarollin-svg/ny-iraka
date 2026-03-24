@@ -517,7 +517,11 @@ async function addTrack(){
   const btn=document.getElementById('add-track-btn');
   btn.textContent='Envoi...';btn.disabled=true;
   try{
-    const path=`${currentSong.id}/${Date.now()}_${modalTrackFile.name.replace(/\s/g,'_')}`;
+    const safeName = modalTrackFile.name
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-zA-Z0-9._-]/g,'_')
+      .replace(/__+/g,'_');
+    const path=`${currentSong.id}/${Date.now()}_${safeName}`;
     const url=await uploadAudio(modalTrackFile,path);
     const trackId='tr_'+Date.now();
     const [newTrack]=await sbInsert('tracks',{id:trackId,song_id:currentSong.id,name,audio_url:url});
